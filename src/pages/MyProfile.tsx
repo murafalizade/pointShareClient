@@ -1,35 +1,37 @@
-import React, { useState } from 'react';
-import { Avatar, List, Card, Button, Input, Modal, Form } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Avatar, List, Card, Button, Input, Modal, Form, Spin, message } from 'antd';
 import { HistoryOutlined, StarOutlined, EditOutlined } from '@ant-design/icons';
-import { AppProtectedLayout} from '../components/AppLayout';
+import { AppProtectedLayout } from '../components/AppLayout';
+import {fetchPointHistory, fetchUserInformation} from "../services/apiServices.ts";
 
-// Mocked user data, you can replace this with real data from your API
-const initialUser = {
-    name: 'John Doe',
-    avatar: 'https://example.com/avatar.jpg',
-    points: 345,
-    history: [
-        'Received 10 points from Alice',
-        'Gave 5 points to Bob',
-        'Gave 15 points to Charlie',
-        'Received 3 points from Eve',
-        'Received 5 points from David',
-        'Gave 8 points to Frank',
-        'Received 2 points from Grace',
-    ]
-};
 
 export const MyProfile: React.FC = () => {
-    const [user, setUser] = useState(initialUser);
-    const [historyVisibleCount, setHistoryVisibleCount] = useState(3); // Initial number of history items to show
+    const [user, setUser] = useState<any>(null); // Updated initial state
+    const [historyVisibleCount, setHistoryVisibleCount] = useState(3);
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const userId = '12345'; // Replace with the actual user ID
 
-    // Load more history items
+    useEffect(() => {
+        const loadUserData = async () => {
+            try {
+                const profileData = await fetchUserInformation();
+                const historyData = await fetchPointHistory();
+                setUser({ ...profileData, history: historyData });
+            } catch (error) {
+                message.error(error.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadUserData();
+    }, []);
+
     const loadMoreHistory = () => {
         setHistoryVisibleCount((prevCount) => prevCount + 3);
     };
 
-    // Edit profile modal handling
     const showEditProfileModal = () => {
         setIsModalVisible(true);
     };
@@ -38,49 +40,67 @@ export const MyProfile: React.FC = () => {
         setIsModalVisible(false);
     };
 
-    const handleEditProfile = (values: any) => {
-        setUser({ ...user, ...values });
-        setIsModalVisible(false);
+    const handleEditProfile = async (values: any) => {
+        // Update user profile via API
+        try {
+            const response = await fetch(`/api/users/${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(values),
+            });
+            if (!response.ok) throw new Error('Failed to update profile');
+            const updatedUser = await response.json();
+            setUser({ ...user, ...updatedUser });
+            setIsModalVisible(false);
+            message.success('Profile updated successfully');
+        } catch (error) {
+            message.error(error.message);
+        }
     };
+
+    if (loading) {
+        return <Spin size="large" style={{ display: 'block', margin: '20px auto' }} />;
+    }
 
     return (
         <AppProtectedLayout>
             {/* Profile Header */}
             <Card bordered={false} style={{ textAlign: 'center', background: "#141414", color: "white", borderRadius: '16px', padding: '40px' }}>
-                <Avatar size={120} src={user.avatar} />
-                <h1 style={{ marginTop: '20px', fontSize: '28px', color: '#f5f5f5' }}>{user.name}</h1>
+                <Avatar size={120} src={user?.avatar} />
+                <h1 style={{ marginTop: '20px', fontSize: '28px', color: '#f5f5f5' }}>{user.username}</h1>
                 <p style={{ fontSize: '18px', color: '#ccc' }}>
-                    Points: {user.points} <StarOutlined style={{ color: '#ffc107', fontSize: '20px' }} />
+                    Points: {user.point} <StarOutlined style={{ color: '#ffc107', fontSize: '20px' }} />
                 </p>
                 <Button icon={<EditOutlined />} onClick={showEditProfileModal} style={{ marginTop: '20px' }}>
                     Edit Profile
                 </Button>
             </Card>
 
-            {/* Recent History */}
-            <div style={{ marginTop: '40px', padding: '0 20px' }}>
-                <h2 style={{ color: 'white' }}>Recent History</h2>
-                <List
-                    itemLayout="horizontal"
-                    dataSource={user.history.slice(0, historyVisibleCount)}
-                    renderItem={(item) => (
-                        <List.Item style={{ background: "#1f1f1f", borderRadius: '12px', padding: '20px', marginBottom: '10px' }}>
-                            <List.Item.Meta
-                                avatar={<HistoryOutlined style={{ fontSize: '20px', color: '#1890ff' }} />}
-                                title={<span style={{ color: 'white' }}>{item}</span>}
-                            />
-                        </List.Item>
-                    )}
-                />
-                {historyVisibleCount < user.history.length && (
-                    <div style={{ textAlign: 'center', marginTop: '20px' }}>
-                        <Button onClick={loadMoreHistory} type="primary">
-                            Load More
-                        </Button>
-                    </div>
-                )}
-            </div>
-
+            {/*/!* Recent History *!/*/}
+            {/*<div style={{ marginTop: '40px', padding: '0 20px' }}>*/}
+            {/*    <h2 style={{ color: 'white' }}>Recent History</h2>*/}
+            {/*    <List*/}
+            {/*        itemLayout="horizontal"*/}
+            {/*        dataSource={user.history.slice(0, historyVisibleCount)}*/}
+            {/*        renderItem={(item) => (*/}
+            {/*            <List.Item style={{ background: "#1f1f1f", borderRadius: '12px', padding: '20px', marginBottom: '10px' }}>*/}
+            {/*                <List.Item.Meta*/}
+            {/*                    avatar={<HistoryOutlined style={{ fontSize: '20px', color: '#1890ff' }} />}*/}
+            {/*                    title={<span style={{ color: 'white' }}>{item}</span>}*/}
+            {/*                />*/}
+            {/*            </List.Item>*/}
+            {/*        )}*/}
+            {/*    />*/}
+            {/*    {historyVisibleCount < user.history.length && (*/}
+            {/*        <div style={{ textAlign: 'center', marginTop: '20px' }}>*/}
+            {/*            <Button onClick={loadMoreHistory} type="primary">*/}
+            {/*                Load More*/}
+            {/*            </Button>*/}
+            {/*        </div>*/}
+            {/*    )}*/}
+            {/*</div>*/}
             {/* Edit Profile Modal */}
             <Modal
                 title="Edit Profile"

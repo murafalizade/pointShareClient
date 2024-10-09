@@ -33,3 +33,27 @@ export const login = async (user,activeTab) => {
     }
     return response.json();
 }
+
+export const fetchPointHistory = async () => {
+    const response = await fetch(`${baseUrl}/api/v1/users/point-history`, {
+        headers: {
+            Authorization: `Bearer ${Cookies.get('token')}`,
+        },
+    });
+    if (!response.ok) {
+        throw new Error('Error fetching point history');
+    }
+    return response.json();
+};
+
+export const fetchTopRanked = async (country:string) => {
+    const response = await fetch(`${baseUrl}/api/v1/users/top-ranked?country=${country}`, {
+        headers: {
+            Authorization: `Bearer ${Cookies.get('token')}`,
+        },
+    });
+    if (!response.ok) {
+        throw new Error('Error fetching point history');
+    }
+    return response.json();
+};

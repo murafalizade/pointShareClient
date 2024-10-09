@@ -1,11 +1,12 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import { List, Avatar, Button } from 'antd';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css'; // Import Leaflet CSS
-import { AppProtectedLayout} from '../components/AppLayout';
-import {io} from "socket.io-client";
-import {baseUrl} from "../constants/baseUrl.ts";
-import Cookies from "js-cookie"; // Import AppLayout
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import { AppProtectedLayout } from '../components/AppLayout';
+import { io } from "socket.io-client";
+import { baseUrl } from "../constants/baseUrl.ts";
+import Cookies from "js-cookie";
+
 
 const socket = io(baseUrl, {
     query: {
@@ -13,30 +14,46 @@ const socket = io(baseUrl, {
     },
 });
 
+const MapCenterUpdater = ({ position }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (position) {
+            map.setView(position, 13);
+        }
+    }, [position, map]);
+    return null;
+};
 
 export const ClosestUsers: React.FC = () => {
     const [closestUsers, setClosestUsers] = useState([]);
+    const [position, setPosition] = useState([40.3771, 49.8875]);
 
     useEffect(() => {
         const watchId = navigator.geolocation.watchPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
+                console.log(latitude, longitude);
+                socket.emit("updateMyLocation", { latitude, longitude });
                 socket.emit('getCloseUser', { latitude, longitude });
             },
             (error) => {
                 console.error('Error fetching location:', error);
             },
-            { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 } // Options for accuracy and frequency
+            { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
         );
 
-        // Listen for the 'closeUser' event
         socket.on('closeUser', (users) => {
             setClosestUsers(users);
         });
 
-        // Cleanup when component unmounts
+        socket.on('myUserLocation', (data)=>  setPosition(data?.location.coordinates))
 
+        return () => {
+            navigator.geolocation.clearWatch(watchId); // Clean up watcher
+        };
     }, []);
+
+    console.log(position)
 
 
     return (
@@ -45,7 +62,6 @@ export const ClosestUsers: React.FC = () => {
                 {/* Interactive Map */}
                 <div style={{ flex: 1 }}>
                     <MapContainer
-                        center={[40.73061, -73.935242]}
                         zoom={13}
                         style={{ height: '100%', width: '100%', borderRadius: '16px' }}
                     >
@@ -53,6 +69,8 @@ export const ClosestUsers: React.FC = () => {
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
                         />
+                        <MapCenterUpdater position={position} />
+
                         {closestUsers.map(user => (
                             <Marker key={user?.id} position={user?.location?.coordinates}>
                                 <Popup>
@@ -63,7 +81,6 @@ export const ClosestUsers: React.FC = () => {
                     </MapContainer>
                 </div>
 
-                {/* Right Sidebar with full list of closest users */}
                 <div
                     style={{
                         width: '300px',
@@ -79,7 +96,7 @@ export const ClosestUsers: React.FC = () => {
                         itemLayout="horizontal"
                         dataSource={closestUsers}
                         renderItem={user => (
-                            <List.Item>
+                            <List.Item key={user.id}>
                                 <List.Item.Meta
                                     avatar={<Avatar>{user?.username.charAt(0)}</Avatar>}
                                     title={<span style={{ color: '#fff' }}>{user?.username}</span>}
@@ -95,4 +112,3 @@ export const ClosestUsers: React.FC = () => {
         </AppProtectedLayout>
     );
 };
-

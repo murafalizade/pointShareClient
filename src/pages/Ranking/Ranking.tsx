@@ -1,56 +1,24 @@
 import React, {useState} from 'react';
 import {List, Avatar, Select, Button} from 'antd';
 import {TrophyOutlined, CrownOutlined, GoldOutlined, StarOutlined} from '@ant-design/icons';
-import { AppProtectedLayout} from '../../components/AppLayout.tsx';
-import ViewProfile from "./ProfileModal.tsx"; // Import AppLayout
+import {AppProtectedLayout} from '../../components/AppLayout.tsx';
+import ViewProfile from "./ProfileModal.tsx";
+import {useQuery} from "react-query";
+import {fetchTopRanked} from "../../services/apiServices.ts";
 
 const {Option} = Select;
 
-const rankingData = {
-    USA: [
-        {id: 1, name: 'Alice', points: 150},
-        {id: 2, name: 'Bob', points: 140},
-        {id: 3, name: 'Charlie', points: 135},
-        {id: 4, name: 'Dave', points: 130},
-        {id: 5, name: 'Eve', points: 120},
-        {id: 6, name: 'Frank', points: 115},
-        {id: 7, name: 'Grace', points: 110},
-        {id: 8, name: 'Hank', points: 105},
-        {id: 9, name: 'Isaac', points: 100},
-        {id: 10, name: 'John', points: 95},
-        {id: 11, name: 'Karen', points: 90},
-        {id: 12, name: 'Liam', points: 85},
-        {id: 13, name: 'Mona', points: 80},
-        {id: 14, name: 'Nick', points: 75},
-        {id: 15, name: 'Olivia', points: 70}
-    ],
-    UK: [
-        {id: 1, name: 'Arthur', points: 148},
-        {id: 2, name: 'Betty', points: 139},
-        {id: 3, name: 'Clyde', points: 132},
-        {id: 4, name: 'Diana', points: 129},
-        {id: 5, name: 'Edward', points: 121},
-        {id: 6, name: 'Fiona', points: 115},
-        {id: 7, name: 'Gareth', points: 110},
-        {id: 8, name: 'Harry', points: 108},
-        {id: 9, name: 'Isabelle', points: 104},
-        {id: 10, name: 'James', points: 99},
-        {id: 11, name: 'Kate', points: 93},
-        {id: 12, name: 'Lola', points: 89},
-        {id: 13, name: 'Mick', points: 82},
-        {id: 14, name: 'Nora', points: 78},
-        {id: 15, name: 'Oscar', points: 74}
-    ]
-};
-
 export const Ranking: React.FC = () => {
-    const [selectedCountry, setSelectedCountry] = useState('USA');
-    const [rankingList, setRankingList] = useState(rankingData['USA']);
+    const [selectedCountry, setSelectedCountry] = useState('string');
+    const {data: rankingList, isLoading, error} = useQuery(
+        ["TOP_RANKED", selectedCountry],
+        () => fetchTopRanked(selectedCountry),
+        { cacheTime: 5000 }
+    );
     const [isModalVisible, setIsModalVisible] = useState(false);
 
     const handleCountryChange = (country: string) => {
         setSelectedCountry(country);
-        setRankingList(rankingData[country]);
     };
 
     const getRankIcon = (rank: number) => {
@@ -66,16 +34,17 @@ export const Ranking: React.FC = () => {
         }
     };
 
+    if (isLoading) return <div>Loading...</div>;
+    if (error) return <div>Error fetching ranking data</div>;
+
     return (
         <AppProtectedLayout>
             <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
                 {/* Country Selection */}
-                <div style={{display: 'flex', justifyContent: 'space-between', alignContent: "center"}}>
-                    <h1>
-                        Top Ranking Users
-                    </h1>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: "center"}}>
+                    <h1>Top Ranking Users</h1>
                     <Select
-                        defaultValue={selectedCountry}
+                        value={selectedCountry}
                         style={{width: 200}}
                         onChange={handleCountryChange}
                     >
@@ -91,7 +60,7 @@ export const Ranking: React.FC = () => {
                     renderItem={(user, index) => (
                         <List.Item
                             actions={[
-                                <Button type="primary" onClick={()=> setIsModalVisible(true)}>View Profile</Button>,
+                                <Button type="primary" onClick={() => setIsModalVisible(true)}>View Profile</Button>,
                             ]}
                             style={{
                                 background: '#001529',
@@ -102,9 +71,9 @@ export const Ranking: React.FC = () => {
                             }}
                         >
                             <List.Item.Meta
-                                avatar={<Avatar>{user.name.charAt(0)}</Avatar>}
-                                title={<span style={{color: '#fff'}}>{user.name}</span>}
-                                description={<span style={{color: '#fff'}}>Points: {user.points} <StarOutlined/></span>}
+                                avatar={<Avatar>{user.username.charAt(0)}</Avatar>}
+                                title={<span style={{color: '#fff'}}>{user.username}</span>}
+                                description={<span style={{color: '#fff'}}>Points: {user.point} <StarOutlined/></span>}
                             />
                             <div style={{
                                 color: '#fff',
@@ -118,7 +87,7 @@ export const Ranking: React.FC = () => {
                     )}
                 />
             </div>
-            <ViewProfile isModalVisibleProps={isModalVisible} />
+            <ViewProfile isModalVisibleProps={isModalVisible} setIsModalVisible={setIsModalVisible}/>
         </AppProtectedLayout>
     );
 };

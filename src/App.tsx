@@ -4,7 +4,7 @@ import {Route, BrowserRouter as Router, Routes} from 'react-router-dom';
 import {Welcome} from './pages/Welcome'; // Import the Welcome component
 import "./App.css"
 import Login from "./pages/Login.tsx";
-import MainPage from "./pages/MainPage.tsx";
+import MainPage from "./pages/Main/MainPage.tsx";
 import {ClosestUsers} from "./pages/ClosestUsers.tsx";
 import {Ranking} from "./pages/Ranking/Ranking.tsx";
 import {MyProfile} from "./pages/MyProfile.tsx";

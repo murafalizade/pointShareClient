@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Button, List, Avatar, notification, Row, Col, Typography, Empty } from 'antd';
 import { StarOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
-import { AppProtectedLayout } from "../components/AppLayout.tsx";
+import { AppProtectedLayout } from "../../components/AppLayout.tsx";
 import { useQuery } from 'react-query';
 import Cookies from "js-cookie";
-import { fetchUserInformation } from "../services/apiServices.ts";
+import { fetchUserInformation, fetchPointHistory } from "../../services/apiServices.ts";
 import { io } from "socket.io-client";
-import { baseUrl } from "../constants/baseUrl.ts";
+import { baseUrl } from "../../constants/baseUrl.ts";
+import { GivingPointModal } from "./GivingPointModal.tsx";
 
 const { Title, Text } = Typography;
 
@@ -18,28 +19,11 @@ const socket = io(baseUrl, {
 
 const MainPage: React.FC = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [notificationCount, setNotificationCount] = useState(0);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null); // Track selected user for giving points
     const [closestUsers, setClosestUsers] = useState([]);
 
-    // Function to handle location fetching
-    const getUserLocation = () => {
-        return new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const { latitude, longitude } = position.coords;
-                        resolve({ latitude, longitude });
-                    },
-                    (error) => reject(error)
-                );
-            } else {
-                reject(new Error("Geolocation not supported"));
-            }
-        });
-    };
-
+    // Fetch closest users using socket
     useEffect(() => {
-        // Continuously fetch location updates using watchPosition
         const watchId = navigator.geolocation.watchPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
@@ -48,52 +32,39 @@ const MainPage: React.FC = () => {
             (error) => {
                 console.error('Error fetching location:', error);
             },
-            { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 } // Options for accuracy and frequency
+            { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
         );
 
-        // Listen for the 'closeUser' event
         socket.on('closeUser', (users) => {
             setClosestUsers(users);
         });
 
-        // Cleanup when component unmounts
-
+        return () => {
+            navigator.geolocation.clearWatch(watchId);
+            socket.off('closeUser');
+        };
     }, []);
 
-
-
-    const { data, error, isLoading } = useQuery('userInfo', fetchUserInformation, {
+    // Fetch user information
+    const { data: userInfo, error: userError, isLoading: userLoading } = useQuery('userInfo', fetchUserInformation, {
         enabled: !!Cookies.get('token'),
     });
 
-    const myName = data?.username || 'Loading...';
-    const myPoints = data?.point || 0;
+    // Fetch point history
+    const { data: pointHistory, error: historyError, isLoading: historyLoading } = useQuery('pointHistory', fetchPointHistory, {
+        enabled: !!Cookies.get('token'),
+    });
 
-    const showGivePointModal = () => {
+    const myName = userInfo?.username || 'Loading...';
+    const myPoints = userInfo?.point || 0;
+
+    const showGivePointModal = (userId: string) => {
+        setSelectedUserId(userId);
         setIsModalVisible(true);
     };
 
-    const handleGivePoint = (userId: number, points: number) => {
-        notification.success({
-            message: 'Points Given!',
-            description: `You have given ${points} points to user ID: ${userId}`,
-        });
-        setNotificationCount(notificationCount + 1);
-        setIsModalVisible(false);
-    };
-
-    const history = [
-        { id: 1, action: 'Received 5 points from Alice', type: 'received' },
-        { id: 2, action: 'Gave 3 points to Bob', type: 'given' },
-        { id: 3, action: 'Received 2 points from Charlie', type: 'received' },
-        { id: 4, action: 'Gave 4 points to David', type: 'given' },
-        { id: 5, action: 'Received 1 point from Eve', type: 'received' },
-        { id: 6, action: 'Gave 2 points to Frank', type: 'given' },
-    ];
-
-    // Handle loading and error states
-    if (isLoading) return <div>Loading...</div>;
-    if (error) return <p>Error fetching user information!</p>;
+    if (userLoading || historyLoading) return <div>Loading...</div>;
+    if (userError || historyError) return <p>Error fetching data!</p>;
 
     return (
         <AppProtectedLayout>
@@ -114,7 +85,7 @@ const MainPage: React.FC = () => {
                                 renderItem={user => (
                                     <List.Item
                                         actions={[
-                                            <Button type="primary" onClick={() => showGivePointModal()}>
+                                            <Button type="primary" onClick={() => showGivePointModal(user._id)}>
                                                 Give Points
                                             </Button>,
                                         ]}
@@ -146,34 +117,57 @@ const MainPage: React.FC = () => {
                             />
                         )}
                     </Col>
+
                     {/* History Section */}
                     <Col span={24} md={{ span: 12 }}>
                         <Title level={4} style={{ color: '#fff' }}>History</Title>
-                        <List
-                            dataSource={history.slice(0, 5)} // Show only 5 history items
-                            renderItem={item => (
-                                <List.Item
-                                    style={{
-                                        border: '1px solid #d9d9d9',
-                                        borderRadius: '8px',
-                                        marginBottom: '12px',
-                                        padding: '12px',
-                                        backgroundColor: item.type === 'received' ? '#4CAF50' : '#f5222d',
-                                        color: '#fff',
-                                    }}
-                                >
-                                    <List.Item.Meta
-                                        avatar={item.type === 'received' ?
-                                            <ArrowDownOutlined style={{ fontSize: '20px', color: '#fff' }} /> :
-                                            <ArrowUpOutlined style={{ fontSize: '20px', color: '#fff' }} />}
-                                        description={<Text style={{ color: '#fff' }}>{item.action}</Text>}
-                                    />
-                                </List.Item>
-                            )}
-                        />
+                        {pointHistory && pointHistory.length > 0 ? (
+                            <List
+                                dataSource={pointHistory.slice(0, 5)} // Show only 5 history items
+                                renderItem={item => (
+                                    <List.Item
+                                        style={{
+                                            border: '1px solid #d9d9d9',
+                                            borderRadius: '8px',
+                                            marginBottom: '12px',
+                                            padding: '12px',
+                                            backgroundColor: item.type === 'received' ? '#4CAF50' : '#f5222d',
+                                            color: '#fff',
+                                        }}
+                                    >
+                                        <List.Item.Meta
+                                            avatar={item.type === 'received' ?
+                                                <ArrowDownOutlined style={{ fontSize: '20px', color: '#fff' }} /> :
+                                                <ArrowUpOutlined style={{ fontSize: '20px', color: '#fff' }} />}
+                                            title={<Text style={{ color: '#fff' }}>{item.type === 'received' ? 'Received' : 'Given'} from {item.username}</Text>}
+                                            description={
+                                                <Text style={{ color: '#d9d9d9' }}>
+                                                    {item.point} points on {new Date(item.date).toLocaleString()}
+                                                </Text>
+                                            }
+                                        />
+                                    </List.Item>
+                                )}
+                            />
+                        ) : (
+                            <Empty
+                                description={<span style={{ color: '#fff' }}>No history found</span>}
+                                style={{ color: '#fff' }}
+                            />
+                        )}
                     </Col>
+
                 </Row>
             </div>
+
+            {/* Giving Point Modal */}
+            {selectedUserId && (
+                <GivingPointModal
+                    isVisible={isModalVisible}
+                    userId={selectedUserId}
+                    onClose={() => setIsModalVisible(false)}
+                />
+            )}
         </AppProtectedLayout>
     );
 };
