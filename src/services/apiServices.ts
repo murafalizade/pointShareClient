@@ -17,14 +17,15 @@ export const fetchUserInformation = async () => {
 };
 
 export const login = async (user,activeTab) => {
-    const response = await fetch(baseUrl+'/api/v1/users/login', {
+    const response = await fetch(baseUrl+`/api/v1/users/${activeTab}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
             email: user.email,
-            username: activeTab === 'register' ? user.username : undefined, // Only send username for register
+            username: activeTab === 'register' ? user.username : undefined,
+            country: activeTab === 'register' ? user.country : undefined,
             password: user.password
         })
     });
@@ -39,6 +40,7 @@ export const fetchPointHistory = async () => {
         headers: {
             Authorization: `Bearer ${Cookies.get('token')}`,
         },
+        method: 'GET',
     });
     if (!response.ok) {
         throw new Error('Error fetching point history');
@@ -51,9 +53,27 @@ export const fetchTopRanked = async (country:string) => {
         headers: {
             Authorization: `Bearer ${Cookies.get('token')}`,
         },
+        method: 'GET',
     });
     if (!response.ok) {
-        throw new Error('Error fetching point history');
+        throw new Error('Error fetching ranking');
     }
+    return response.json();
+};
+
+export const updateMyProfile = async (user: any) => {
+    const response = await fetch(`${baseUrl}/api/v1/users/profile`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json', // Specify JSON content
+            Authorization: `Bearer ${Cookies.get('token')}`,
+        },
+        body: JSON.stringify(user), // Ensure user object is serialized
+    });
+
+    if (!response.ok) {
+        throw new Error('Error updating profile');
+    }
+
     return response.json();
 };

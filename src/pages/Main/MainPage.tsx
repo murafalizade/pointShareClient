@@ -1,149 +1,175 @@
-// src/pages/Login.tsx
-import React, { useState } from 'react';
-import { Button, Input, Tabs, Typography, Layout, Select } from 'antd';
-import { useMutation } from 'react-query';
-import Cookies from 'js-cookie';
-import {useNavigate} from "react-router-dom";
-import {login} from "../services/apiServices.ts";
-import { countries } from '../constants/countires.ts';
+import React, { useEffect, useState } from 'react';
+import { Button, List, Avatar, Row, Col, Typography, Empty } from 'antd';
+import { StarOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
+import { AppProtectedLayout } from "../../components/AppLayout.tsx";
+import { useQuery } from 'react-query';
+import Cookies from "js-cookie";
+import { fetchUserInformation, fetchPointHistory } from "../../services/apiServices.ts";
+import { io } from "socket.io-client";
+import { baseUrl } from "../../constants/baseUrl.ts";
+import { GivingPointModal } from "./GivingPointModal.tsx";
 
-const { Title } = Typography;
-const { TabPane } = Tabs;
-const { Content } = Layout;
-const {Option} = Select;
+const { Title, Text } = Typography;
 
+const socket = io(baseUrl, {
+    query: {
+        token: Cookies.get('token'),
+    },
+});
 
-interface IUser {
-    email: string;
-    username: string;
-    password: string;
-    country: string;
-}
+const MainPage: React.FC = () => {
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null); // Track selected user for giving points
+    const [closestUsers, setClosestUsers] = useState([]);
 
-const Login: React.FC = () => {
-    const [activeTab, setActiveTab] = useState('login');
-    const navigate = useNavigate();
+    // Fetch closest users using socket
+    useEffect(() => {
+        const watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                socket.emit('getCloseUser', { latitude, longitude });
+            },
+            (error) => {
+                console.error('Error fetching location:', error);
+            },
+            { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
+        );
 
-    const [user, setUser] = useState<IUser>({
-        username: '',
-        email: '',
-        password: '',
-        country: "Azerbaijan"
+        socket.on('closeUser', (users) => {
+            setClosestUsers(users);
+        });
+
+        return () => {
+            navigator.geolocation.clearWatch(watchId);
+            socket.off('closeUser');
+        };
+    }, []);
+
+    // Fetch user information
+    const { data: userInfo, error: userError, isLoading: userLoading } = useQuery('userInfo', fetchUserInformation, {
+        enabled: !!Cookies.get('token'),
     });
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setUser(prevUser => ({ ...prevUser, [name]: value }));
-    };
-
-    const handleTabChange = (key: string) => {
-        setActiveTab(key);
-    };
-
-    const handleGoogleLogin = () => {
-        // Handle Google login logic here
-        console.log('Google login clicked');
-    };
-
-    // API call to login
-    const loginMutation = useMutation(()=>login(user, activeTab), {
-        onSuccess: (data) => {
-            Cookies.set('token', data.token, { expires: 7 });
-            console.log('Login successful', data);
-            navigate("/app")
-        },
-        onError: (error) => {
-            console.error('Login error:', error);
-            // Handle error (e.g., show notification)
-        }
+    // Fetch point history
+    const { data: pointHistory, error: historyError, isLoading: historyLoading } = useQuery('pointHistory', fetchPointHistory, {
+        enabled: !!Cookies.get('token'),
     });
 
-    const handleSubmit = () => {
-        loginMutation.mutate();
+    const myName = userInfo?.username || 'Loading...';
+    const myPoints = userInfo?.point || 0;
+
+    const showGivePointModal = (userId: string) => {
+        setSelectedUserId(userId);
+        setIsModalVisible(true);
     };
+
+    if (userLoading || historyLoading) return <div>Loading...</div>;
+    if (userError || historyError) return <p>Error fetching data!</p>;
 
     return (
-        <Layout className="login-layout">
-            <Content className="login-layout">
-                <div className="login-box">
-                    <Title className="login-title">Welcome Back!</Title>
-                    <Tabs activeKey={activeTab} onChange={handleTabChange}>
-                        <TabPane tab="Login" key="login">
-                            <div className="form-group">
-                                <Input
-                                    name="email"
-                                    onChange={handleInputChange}
-                                    placeholder="Email"
-                                    type="email"
-                                    className="form-input"
-                                />
-                                <Input.Password
-                                    name="password"
-                                    placeholder="Password"
-                                    onChange={handleInputChange}
-                                    className="form-input"
-                                />
-                                <Button
-                                    type="primary"
-                                    className="form-button"
-                                    onClick={handleSubmit}
-                                >
-                                    Login
-                                </Button>
-                            </div>
-                        </TabPane>
-                        <TabPane tab="Register" key="register">
-                            <div className="form-group">
-                                <Input
-                                    name="username"
-                                    placeholder="Username"
-                                    onChange={handleInputChange}
-                                    className="form-input"
-                                />
-                                <Input
-                                    name="email"
-                                    placeholder="Email"
-                                    onChange={handleInputChange}
-                                    className="form-input"
-                                />
-                                <Input.Password
-                                    name="password"
-                                    placeholder="Password"
-                                    onChange={handleInputChange}
-                                    className="form-input"
-                                />
-                                <Select style={{width:'320px', padding:'0', textAlign:'left', height:'45px'}} placeholder={'Country'} className='form-input' value={user.country}>
-                                    {countries.map(country=>(
-                                        <Option value={country}>{country}</Option>
-                                    ))}
-                                </Select>
-                                <Button
-                                    type="primary"
-                                    className="form-button"
-                                    onClick={handleSubmit}
-                                >
-                                    Register
-                                </Button>
-                            </div>
-                        </TabPane>
-                    </Tabs>
-                    <button className="google-button" onClick={handleGoogleLogin}>
-                        <span aria-hidden="true" className="google-logo">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                                                                                viewBox="0 0 512 512" height="24"
-                                                                                width="24"><path fill="#4285f4"
-                                                                                                 d="M386 400c45-42 65-112 53-179H260v74h102c-4 24-18 44-38 57z"></path><path
-                              fill="#34a853" d="M90 341a192 192 0 0 0 296 59l-62-48c-53 35-141 22-171-60z"></path><path
-                              fill="#fbbc02" d="M153 292c-8-25-8-48 0-73l-63-49c-23 46-30 111 0 171z"></path><path
-                              fill="#ea4335"
-                              d="M153 219c22-69 116-109 179-50l55-54c-78-75-230-72-297 55z"></path></svg>
-                        </span>
-                        Continue with Google
-                    </button>
-                </div>
-            </Content>
-        </Layout>
+        <AppProtectedLayout>
+            <div className="main-content">
+                <Row justify="space-between" align="middle">
+                    <Title level={2} style={{ color: '#fff' }}>Welcome, {myName}!</Title>
+                    <Title level={2} style={{ color: '#fff' }}>{myPoints} <StarOutlined /></Title>
+                </Row>
+
+                <Row gutter={24} style={{ marginTop: '24px' }}>
+                    {/* Closest Users Section */}
+                    <Col span={24} md={{ span: 12 }}>
+                        <Title level={4} style={{ color: '#fff' }}>Closest Users</Title>
+                        {closestUsers.length > 0 ? (
+                            <List
+                                itemLayout="horizontal"
+                                dataSource={closestUsers.slice(0, 5)} // Show only 5 users
+                                renderItem={user => (
+                                    <List.Item
+                                        actions={[
+                                            <Button type="primary" onClick={() => showGivePointModal(user._id)}>
+                                                Give Points
+                                            </Button>,
+                                        ]}
+                                        style={{
+                                            border: '1px solid #d9d9d9',
+                                            borderRadius: '8px',
+                                            marginBottom: '12px',
+                                            padding: '12px',
+                                            backgroundColor: '#2c2c2c',
+                                            color: '#fff',
+                                        }}
+                                    >
+                                        <List.Item.Meta
+                                            avatar={<Avatar>{user.username.charAt(0)}</Avatar>}
+                                            title={<Text style={{ color: '#fff' }}>{user.username}</Text>}
+                                            description={
+                                                <Text style={{ color: '#d9d9d9' }}>
+                                                    {user.point} <StarOutlined />
+                                                </Text>
+                                            }
+                                        />
+                                    </List.Item>
+                                )}
+                            />
+                        ) : (
+                            <Empty
+                                description={<span style={{ color: '#fff' }}>No closest users found</span>}
+                                style={{ color: '#fff' }}
+                            />
+                        )}
+                    </Col>
+
+                    {/* History Section */}
+                    <Col span={24} md={{ span: 12 }}>
+                        <Title level={4} style={{ color: '#fff' }}>History</Title>
+                        {pointHistory && pointHistory.length > 0 ? (
+                            <List
+                                dataSource={pointHistory.slice(0, 5)} // Show only 5 history items
+                                renderItem={item => (
+                                    <List.Item
+                                        style={{
+                                            border: '1px solid #d9d9d9',
+                                            borderRadius: '8px',
+                                            marginBottom: '12px',
+                                            padding: '12px',
+                                            backgroundColor: item.type === 'received' ? '#4CAF50' : '#f5222d',
+                                            color: '#fff',
+                                        }}
+                                    >
+                                        <List.Item.Meta
+                                            avatar={item.type === 'received' ?
+                                                <ArrowDownOutlined style={{ fontSize: '20px', color: '#fff' }} /> :
+                                                <ArrowUpOutlined style={{ fontSize: '20px', color: '#fff' }} />}
+                                            title={<Text style={{ color: '#fff' }}>{item.type === 'received' ? 'Received' : 'Given'} from {item.username}</Text>}
+                                            description={
+                                                <Text style={{ color: '#d9d9d9' }}>
+                                                    {item.point} points on {new Date(item.date).toLocaleString()}
+                                                </Text>
+                                            }
+                                        />
+                                    </List.Item>
+                                )}
+                            />
+                        ) : (
+                            <Empty
+                                description={<span style={{ color: '#fff' }}>No history found</span>}
+                                style={{ color: '#fff' }}
+                            />
+                        )}
+                    </Col>
+
+                </Row>
+            </div>
+
+            {/* Giving Point Modal */}
+            {selectedUserId && (
+                <GivingPointModal
+                    isVisible={isModalVisible}
+                    userId={selectedUserId}
+                    onClose={() => setIsModalVisible(false)}
+                />
+            )}
+        </AppProtectedLayout>
     );
 };
 
-export default Login;
+export default MainPage;

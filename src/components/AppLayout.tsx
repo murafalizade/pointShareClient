@@ -14,15 +14,7 @@ const AppLayout = ({ children }: IAppLayoutProps) => {
                 <Sidebar />
 
                 <Layout style={{ background: "#001529" }}>
-                    <Content
-                        style={{
-                            borderRadius: "16px",
-                            background: "#1f1f1f",
-                            margin: '48px',
-                            padding: "24px",
-                            overflow: 'initial',
-                        }}
-                    >
+                    <Content className={'layout-content'}>
                         {children}
                     </Content>
                 </Layout>

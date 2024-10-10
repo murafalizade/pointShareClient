@@ -257,10 +257,30 @@
   }
 }
 
+.leaflet-container{
+  position: relative;
+}
+
 /* For Mobile: Hide sidebar, show bottom navigation */
 @media (max-width: 767px) {
   .sidebar-container {
     display: none;
+  }
+
+  .leaflet-container{
+    position: absolute;
+  }
+
+  .closest-users-list{
+    position: absolute;
+    bottom: 0;
+    height: 190px;
+    width: 100% !important;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    max-height: 200px;
+    z-index: 1001;
+    border-radius: 0!important;
   }
 
   .bottom-navigation {
@@ -274,6 +294,10 @@
     z-index: 1000;
   }
 
+  .layout-content{
+    margin: 0!important;
+  }
+
   .bottom-navigation a {
     color: white;
     font-size: 18px;
@@ -282,3 +306,10 @@
   }
 }
 
+.layout-content{
+  border-radius: 16px;
+  background: #1f1f1f;
+  margin: 48px;
+  padding: 24px;
+  overflow: initial;
+}

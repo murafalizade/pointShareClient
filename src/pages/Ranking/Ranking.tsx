@@ -1,16 +1,17 @@
 import React, {useState} from 'react';
-import {List, Avatar, Select, Button} from 'antd';
+import {List, Avatar, Select, Button, Spin} from 'antd';
 import {TrophyOutlined, CrownOutlined, GoldOutlined, StarOutlined} from '@ant-design/icons';
 import {AppProtectedLayout} from '../../components/AppLayout.tsx';
 import ViewProfile from "./ProfileModal.tsx";
 import {useQuery} from "react-query";
 import {fetchTopRanked} from "../../services/apiServices.ts";
+import {countries} from "../../constants/countires.ts";
 
 const {Option} = Select;
 
 export const Ranking: React.FC = () => {
-    const [selectedCountry, setSelectedCountry] = useState('string');
-    const {data: rankingList, isLoading, error} = useQuery(
+    const [selectedCountry, setSelectedCountry] = useState('Azerbaijan');
+    const {data: rankingList = [], isLoading} = useQuery(
         ["TOP_RANKED", selectedCountry],
         () => fetchTopRanked(selectedCountry),
         { cacheTime: 5000 }
@@ -34,9 +35,6 @@ export const Ranking: React.FC = () => {
         }
     };
 
-    if (isLoading) return <div>Loading...</div>;
-    if (error) return <div>Error fetching ranking data</div>;
-
     return (
         <AppProtectedLayout>
             <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
@@ -48,44 +46,53 @@ export const Ranking: React.FC = () => {
                         style={{width: 200}}
                         onChange={handleCountryChange}
                     >
-                        <Option value="USA">USA</Option>
-                        <Option value="UK">UK</Option>
+                        {
+                            countries.map(country=>(
+                                <Option value={country}>{country}</Option>
+                            ))
+                        }
                     </Select>
                 </div>
 
                 {/* Ranking List */}
-                <List
-                    itemLayout="horizontal"
-                    dataSource={rankingList}
-                    renderItem={(user, index) => (
-                        <List.Item
-                            actions={[
-                                <Button type="primary" onClick={() => setIsModalVisible(true)}>View Profile</Button>,
-                            ]}
-                            style={{
-                                background: '#001529',
-                                marginBottom: '10px',
-                                borderRadius: '10px',
-                                padding: '15px',
-                                border: '1px solid #333'
-                            }}
-                        >
-                            <List.Item.Meta
-                                avatar={<Avatar>{user.username.charAt(0)}</Avatar>}
-                                title={<span style={{color: '#fff'}}>{user.username}</span>}
-                                description={<span style={{color: '#fff'}}>Points: {user.point} <StarOutlined/></span>}
-                            />
-                            <div style={{
-                                color: '#fff',
-                                borderRadius: "50%",
-                                border: "1px solid #333",
-                                padding: '7px 11px'
-                            }}>
-                                {getRankIcon(index + 1)}
-                            </div>
-                        </List.Item>
-                    )}
-                />
+                {
+                    isLoading?(
+                        <Spin />
+                        ):(
+                        <List
+                            itemLayout="horizontal"
+                            dataSource={rankingList}
+                            renderItem={(user, index) => (
+                                <List.Item
+                                    actions={[
+                                        <Button type="primary" onClick={() => setIsModalVisible(true)}>View Profile</Button>,
+                                    ]}
+                                    style={{
+                                        background: '#001529',
+                                        marginBottom: '10px',
+                                        borderRadius: '10px',
+                                        padding: '15px',
+                                        border: '1px solid #333'
+                                    }}
+                                >
+                                    <List.Item.Meta
+                                        avatar={<Avatar>{user.username.charAt(0)}</Avatar>}
+                                        title={<span style={{color: '#fff'}}>{user.username}</span>}
+                                        description={<span style={{color: '#fff'}}>Points: {user.point} <StarOutlined/></span>}
+                                    />
+                                    <div style={{
+                                        color: '#fff',
+                                        borderRadius: "50%",
+                                        border: "1px solid #333",
+                                        padding: '7px 11px'
+                                    }}>
+                                        {getRankIcon(index + 1)}
+                                    </div>
+                                </List.Item>
+                            )}
+                        />
+                    )
+                }
             </div>
             <ViewProfile isModalVisibleProps={isModalVisible} setIsModalVisible={setIsModalVisible}/>
         </AppProtectedLayout>

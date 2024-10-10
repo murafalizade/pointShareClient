@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Menu, notification } from 'antd';
 import { LogoutOutlined, TeamOutlined, TrophyOutlined, UserOutlined, DoubleLeftOutlined, DoubleRightOutlined } from '@ant-design/icons';
-import { Link, useLocation } from 'react-router-dom';
+import {Link, useLocation, useNavigate} from 'react-router-dom';
 import Sider from 'antd/es/layout/Sider';
 import { Button } from 'antd';
 import Cookies from "js-cookie";
@@ -9,6 +9,8 @@ import Cookies from "js-cookie";
 export const Sidebar: React.FC = () => {
     const [collapsed, setCollapsed] = useState(false);
     const location = useLocation();
+
+    const nav = useNavigate();
 
     // Toggle sidebar collapse
     const toggleCollapse = () => {
@@ -21,6 +23,7 @@ export const Sidebar: React.FC = () => {
             description: 'You have successfully logged out.',
         });
         Cookies.remove('token');
+        nav('/')
     };
 
     return (
