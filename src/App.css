@@ -240,3 +240,45 @@
   width: 25%; /* Slightly smaller for notifications */
 }
 
+/* AppLayout.css */
+
+/* For Desktop: Hide bottom navigation */
+@media (min-width: 768px) {
+  .bottom-navigation {
+    display: none;
+  }
+
+  .sidebar-container {
+    display: block;
+  }
+
+  .layout-content {
+    margin-left: 200px; /* Sidebar width */
+  }
+}
+
+/* For Mobile: Hide sidebar, show bottom navigation */
+@media (max-width: 767px) {
+  .sidebar-container {
+    display: none;
+  }
+
+  .bottom-navigation {
+    display: flex;
+    justify-content: space-around;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: rgb(34, 36, 41);
+    padding: 10px 0;
+    z-index: 1000;
+  }
+
+  .bottom-navigation a {
+    color: white;
+    font-size: 18px;
+    text-align: center;
+    flex: 1;
+  }
+}
+
