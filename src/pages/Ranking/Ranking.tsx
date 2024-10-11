@@ -1,8 +1,7 @@
 import React, {useState} from 'react';
-import {List, Avatar, Select, Button, Spin} from 'antd';
+import {List, Avatar, Select, Spin} from 'antd';
 import {TrophyOutlined, CrownOutlined, GoldOutlined, StarOutlined} from '@ant-design/icons';
 import {AppProtectedLayout} from '../../components/AppLayout.tsx';
-import ViewProfile from "./ProfileModal.tsx";
 import {useQuery} from "react-query";
 import {fetchTopRanked} from "../../services/apiServices.ts";
 import {countries} from "../../constants/countires.ts";
@@ -16,8 +15,6 @@ export const Ranking: React.FC = () => {
         () => fetchTopRanked(selectedCountry),
         { cacheTime: 5000 }
     );
-    const [isModalVisible, setIsModalVisible] = useState(false);
-
     const handleCountryChange = (country: string) => {
         setSelectedCountry(country);
     };
@@ -64,9 +61,6 @@ export const Ranking: React.FC = () => {
                             dataSource={rankingList}
                             renderItem={(user, index) => (
                                 <List.Item
-                                    actions={[
-                                        <Button type="primary" onClick={() => setIsModalVisible(true)}>View Profile</Button>,
-                                    ]}
                                     style={{
                                         background: '#001529',
                                         marginBottom: '10px',
@@ -94,7 +88,6 @@ export const Ranking: React.FC = () => {
                     )
                 }
             </div>
-            <ViewProfile isModalVisibleProps={isModalVisible} setIsModalVisible={setIsModalVisible}/>
         </AppProtectedLayout>
     );
 };

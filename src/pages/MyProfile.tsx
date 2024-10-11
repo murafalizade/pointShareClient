@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import {Avatar, List, Card, Button, Input, Modal, Form, Spin, message, Typography, Select} from 'antd';
-import {HistoryOutlined, StarOutlined, EditOutlined, ArrowDownOutlined, ArrowUpOutlined} from '@ant-design/icons';
+import {Avatar, List, Card, Button, Input, Modal, Form, Spin, message, Typography, Select, Empty} from 'antd';
+import {HistoryOutlined, StarOutlined, EditOutlined} from '@ant-design/icons';
 import { AppProtectedLayout } from '../components/AppLayout';
 import {fetchPointHistory, fetchUserInformation, updateMyProfile} from "../services/apiServices.ts";
 import {countries} from "../constants/countires.ts";
@@ -11,7 +11,6 @@ export const MyProfile: React.FC = () => {
     const [user, setUser] = useState<any>(null); // Updated initial state
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [loading, setLoading] = useState(true);
-    const userId = '12345'; // Replace with the actual user ID
 
     useEffect(() => {
         const loadUserData = async () => {
@@ -59,7 +58,7 @@ export const MyProfile: React.FC = () => {
                     <Card bordered={false}
                           style={{
                               textAlign: 'center',
-                              background: "#141414",
+                              backgroundColor:"inherit",
                               color: "white",
                               borderRadius: '16px',
                               padding: '40px'
@@ -80,37 +79,42 @@ export const MyProfile: React.FC = () => {
 
             <div style={{marginTop: '40px', padding: '0 20px'}}>
                 <h2 style={{color: 'white'}}>Recent History</h2>
-                <List
-                    dataSource={user?.history?.slice(0, 5)} // Show only 5 history items
-                    renderItem={(item) => (
-                        <List.Item
-                            style={{
-                                border: '1px solid #d9d9d9',
-                                borderRadius: '8px',
-                                marginBottom: '12px',
-                                padding: '12px',
-                                backgroundColor: item.username === user.username ? '#1890ff' : '#4CAF50', // Sender (user) in blue, receiver in green
-                                color: '#fff',
-                            }}
-                        >
-                            <List.Item.Meta
-                                avatar={
-                                    <HistoryOutlined style={{fontSize: '20px', color: '#fff'}}/>
-                                }
-                                title={
-                                    <Text style={{color: '#fff'}}>
-                                        {item.username === user.username ? 'You' : item.username}
-                                    </Text>
-                                }
-                                description={
-                                    <Text style={{color: '#d9d9d9'}}>
-                                        {item.point} points on {new Date(item.date).toLocaleString()}
-                                    </Text>
-                                }
-                            />
-                        </List.Item>
-                    )}
-                />
+                {user?.history.length > 0 ? (<List
+                        dataSource={user?.history}
+                        renderItem={(item) => (
+                            <List.Item
+                                style={{
+                                    border: '1px solid #d9d9d9',
+                                    borderRadius: '8px',
+                                    marginBottom: '12px',
+                                    padding: '12px',
+                                    backgroundColor: item.username === user.username ? '#1890ff' : '#4CAF50', // Sender (user) in blue, receiver in green
+                                    color: '#fff',
+                                }}
+                            >
+                                <List.Item.Meta
+                                    avatar={
+                                        <HistoryOutlined style={{fontSize: '20px', color: '#fff'}}/>
+                                    }
+                                    title={
+                                        <Text style={{color: '#fff'}}>
+                                            {item.username === user.username ? 'You' : item.username}
+                                        </Text>
+                                    }
+                                    description={
+                                        <Text style={{color: '#d9d9d9'}}>
+                                            {item.point} points on {new Date(item.date).toLocaleString()}
+                                        </Text>
+                                    }
+                                />
+                            </List.Item>
+                        )}
+                    />) :
+                    (<Empty
+                        description={<span style={{color: '#fff'}}>No history found</span>}
+                        style={{color: '#fff'}}
+                    />)}
+
             </div>
             {/*/!* Edit Profile Modal *!/*/}
             <Modal

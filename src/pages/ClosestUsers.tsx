@@ -19,7 +19,7 @@ const MapCenterUpdater = ({position}) => {
     const map = useMap();
     useEffect(() => {
         if (position) {
-            map.setView(position, 13);
+            map.setView(position, 16);
         }
     }, [position, map]);
     return null;
@@ -40,7 +40,6 @@ export const ClosestUsers: React.FC = () => {
         const watchId = navigator.geolocation.watchPosition(
             (position) => {
                 const {latitude, longitude} = position.coords;
-                console.log(latitude, longitude);
                 socket.emit("updateMyLocation", {latitude, longitude});
                 socket.emit('getCloseUser', {latitude, longitude});
             },
@@ -60,9 +59,6 @@ export const ClosestUsers: React.FC = () => {
             navigator.geolocation.clearWatch(watchId); // Clean up watcher
         };
     }, []);
-
-    console.log(position)
-
 
     return (
         <AppProtectedLayout>

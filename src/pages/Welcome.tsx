@@ -1,4 +1,3 @@
-// src/pages/Welcome.tsx
 import React from 'react';
 import { Button, Typography, Layout } from 'antd';
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button, List, Avatar, Row, Col, Typography, Empty } from 'antd';
-import { StarOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
+import {StarOutlined, HistoryOutlined} from '@ant-design/icons';
 import { AppProtectedLayout } from "../../components/AppLayout.tsx";
 import { useQuery } from 'react-query';
 import Cookies from "js-cookie";
@@ -8,6 +8,7 @@ import { fetchUserInformation, fetchPointHistory } from "../../services/apiServi
 import { io } from "socket.io-client";
 import { baseUrl } from "../../constants/baseUrl.ts";
 import { GivingPointModal } from "./GivingPointModal.tsx";
+import {useNavigate} from "react-router-dom";
 
 const { Title, Text } = Typography;
 
@@ -19,14 +20,16 @@ const socket = io(baseUrl, {
 
 const MainPage: React.FC = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [selectedUserId, setSelectedUserId] = useState<string | null>(null); // Track selected user for giving points
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const [closestUsers, setClosestUsers] = useState([]);
 
-    // Fetch closest users using socket
+    const navigate = useNavigate();
+
     useEffect(() => {
         const watchId = navigator.geolocation.watchPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
+                socket.emit("updateMyLocation", {latitude, longitude});
                 socket.emit('getCloseUser', { latitude, longitude });
             },
             (error) => {
@@ -45,12 +48,10 @@ const MainPage: React.FC = () => {
         };
     }, []);
 
-    // Fetch user information
     const { data: userInfo, error: userError, isLoading: userLoading } = useQuery('userInfo', fetchUserInformation, {
         enabled: !!Cookies.get('token'),
     });
 
-    // Fetch point history
     const { data: pointHistory, error: historyError, isLoading: historyLoading } = useQuery('pointHistory', fetchPointHistory, {
         enabled: !!Cookies.get('token'),
     });
@@ -121,40 +122,46 @@ const MainPage: React.FC = () => {
                     {/* History Section */}
                     <Col span={24} md={{ span: 12 }}>
                         <Title level={4} style={{ color: '#fff' }}>History</Title>
-                        {pointHistory && pointHistory.length > 0 ? (
-                            <List
-                                dataSource={pointHistory.slice(0, 5)} // Show only 5 history items
-                                renderItem={item => (
-                                    <List.Item
-                                        style={{
-                                            border: '1px solid #d9d9d9',
-                                            borderRadius: '8px',
-                                            marginBottom: '12px',
-                                            padding: '12px',
-                                            backgroundColor: item.type === 'received' ? '#4CAF50' : '#f5222d',
-                                            color: '#fff',
-                                        }}
-                                    >
-                                        <List.Item.Meta
-                                            avatar={item.type === 'received' ?
-                                                <ArrowDownOutlined style={{ fontSize: '20px', color: '#fff' }} /> :
-                                                <ArrowUpOutlined style={{ fontSize: '20px', color: '#fff' }} />}
-                                            title={<Text style={{ color: '#fff' }}>{item.type === 'received' ? 'Received' : 'Given'} from {item.username}</Text>}
-                                            description={
-                                                <Text style={{ color: '#d9d9d9' }}>
-                                                    {item.point} points on {new Date(item.date).toLocaleString()}
-                                                </Text>
-                                            }
-                                        />
-                                    </List.Item>
-                                )}
-                            />
-                        ) : (
-                            <Empty
-                                description={<span style={{ color: '#fff' }}>No history found</span>}
-                                style={{ color: '#fff' }}
-                            />
-                        )}
+                        {pointHistory.length > 0 ? (
+                            <>
+                                <List
+                                    dataSource={ pointHistory?.slice(0, 5)}
+                                    renderItem={(item) => (
+                                        <List.Item
+                                            style={{
+                                                border: '1px solid #d9d9d9',
+                                                borderRadius: '8px',
+                                                marginBottom: '12px',
+                                                padding: '12px',
+                                                backgroundColor: item.username === myName ? '#1890ff' : '#4CAF50', // Sender (user) in blue, receiver in green
+                                                color: '#fff',
+                                            }}
+                                        >
+                                            <List.Item.Meta
+                                                avatar={
+                                                    <HistoryOutlined style={{fontSize: '20px', color: '#fff'}}/>
+                                                }
+                                                title={
+                                                    <Text style={{color: '#fff'}}>
+                                                        {item.username === myName ? `You` : item.username}
+                                                    </Text>
+                                                }
+                                                description={
+                                                    <Text style={{color: '#d9d9d9'}}>
+                                                        {item.point} points on {new Date(item.date).toLocaleString()}
+                                                    </Text>
+                                                }
+                                            />
+                                        </List.Item>
+                                    )}
+                                />
+                                {pointHistory.length > 5 ? <Button type={'primary'} onClick={()=> navigate('/my-profile')}>Load more</Button>:null}
+                            </>
+                            ) :
+                            (<Empty
+                                description={<span style={{color: '#fff'}}>No history found</span>}
+                                style={{color: '#fff'}}
+                            />)}
                     </Col>
 
                 </Row>

@@ -3,7 +3,7 @@ import { Modal, Button, Rate, message } from 'antd';
 import { StarOutlined } from '@ant-design/icons';
 import { io } from 'socket.io-client';
 import { baseUrl } from "../../constants/baseUrl.ts";
-import Cookies from "js-cookie"; // WebSocket for real-time
+import Cookies from "js-cookie";
 
 const socket = io(baseUrl, {
     query: {
