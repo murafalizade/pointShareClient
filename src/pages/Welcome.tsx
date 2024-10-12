@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import { Button, Typography, Layout } from 'antd';
 
 const { Title, Paragraph } = Typography;
