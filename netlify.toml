@@ -1,0 +1,8 @@
+[build]
+  publish = "dist" # or "build" if using Create React App (CRA)
+  command = "npm run build" # or the appropriate build command for your project
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
