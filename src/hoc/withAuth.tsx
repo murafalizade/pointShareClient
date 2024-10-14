@@ -8,7 +8,7 @@ import { notification } from "antd";
 let socket: Socket | null = null;
 
 export const withAuth = (Component: React.FunctionComponent) => {
-    return (props) => {
+    return (props: any) => {
         const nav = useNavigate();
 
         useEffect(() => {

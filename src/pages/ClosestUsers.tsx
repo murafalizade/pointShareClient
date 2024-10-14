@@ -8,6 +8,16 @@ import {baseUrl} from "../constants/baseUrl.ts";
 import Cookies from "js-cookie";
 import {GivingPointModal} from "./Main/GivingPointModal.tsx";
 
+interface IUser {
+    id: string;
+    location: {
+        coordinates: [number, number];
+    };
+    username: string;
+    point: number;
+    _id: string; // in case your data uses `_id`
+}
+
 
 const socket = io(baseUrl, {
     query: {
@@ -26,7 +36,7 @@ const MapCenterUpdater = ({position}) => {
 };
 
 export const ClosestUsers: React.FC = () => {
-    const [closestUsers, setClosestUsers] = useState([]);
+    const [closestUsers, setClosestUsers] = useState<IUser[]>([]);
     const [position, setPosition] = useState([40.3771, 49.8875]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -66,19 +76,15 @@ export const ClosestUsers: React.FC = () => {
                 {/* Interactive Map */}
                 <div style={{flex: 1}}>
                     <MapContainer
-                        zoom={13}
                         style={{height: '100%', width: '100%', borderRadius: '16px'}}
                     >
-                        <TileLayer
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                            attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
-                        />
+                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                         <MapCenterUpdater position={position}/>
 
                         {closestUsers.map(user => (
-                            <Marker key={user?.id} position={user?.location?.coordinates}>
+                            <Marker key={user?._id} position={user?.location?.coordinates}>
                                 <Popup>
-                                    {user?.username} <br/> Points: {user?.point}
+                                    {user?.username} <br/> Points: {user?.point.toFixed(3)}
                                 </Popup>
                             </Marker>
                         ))}
@@ -105,7 +111,7 @@ export const ClosestUsers: React.FC = () => {
                                 <List.Item.Meta
                                     avatar={<Avatar>{user?.username.charAt(0)}</Avatar>}
                                     title={<span style={{color: '#fff'}}>{user?.username}</span>}
-                                    description={<span style={{color: '#fff'}}>Points: {user?.point}</span>}
+                                    description={<span style={{color: '#fff'}}>Points: {user?.point.toFixed(3)}</span>}
                                 />
                                 <Button type="primary" onClick={() => showGivePointModal(user._id)}>Give Points</Button>
                             </List.Item>

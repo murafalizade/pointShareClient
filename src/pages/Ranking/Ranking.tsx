@@ -8,9 +8,14 @@ import {countries} from "../../constants/countires.ts";
 
 const {Option} = Select;
 
+interface IUser {
+    username: string;
+    point: number;
+}
+
 export const Ranking: React.FC = () => {
     const [selectedCountry, setSelectedCountry] = useState('Azerbaijan');
-    const {data: rankingList = [], isLoading} = useQuery(
+    const {data: rankingList = [], isLoading} = useQuery<IUser[]>(
         ["TOP_RANKED", selectedCountry],
         () => fetchTopRanked(selectedCountry),
         { cacheTime: 5000 }
@@ -72,7 +77,7 @@ export const Ranking: React.FC = () => {
                                     <List.Item.Meta
                                         avatar={<Avatar>{user.username.charAt(0)}</Avatar>}
                                         title={<span style={{color: '#fff'}}>{user.username}</span>}
-                                        description={<span style={{color: '#fff'}}>Points: {user.point} <StarOutlined/></span>}
+                                        description={<span style={{color: '#fff'}}>Points: {user.point.toFixed(3)} <StarOutlined/></span>}
                                     />
                                     <div style={{
                                         color: '#fff',

@@ -6,6 +6,14 @@ import {fetchPointHistory, fetchUserInformation, updateMyProfile} from "../servi
 import {countries} from "../constants/countires.ts";
 
 const { Text } = Typography;
+const {Option} = Select;
+
+interface Item {
+    username: string;
+    point: number;
+    date: string;
+}
+
 
 export const MyProfile: React.FC = () => {
     const [user, setUser] = useState<any>(null); // Updated initial state
@@ -17,7 +25,6 @@ export const MyProfile: React.FC = () => {
             try {
                 const profileData = await fetchUserInformation();
                 const historyData = await fetchPointHistory();
-                console.log(historyData)
                 setUser({ ...profileData, history: historyData || [] });
             } catch (error) {
                 message.error(error.message);
@@ -39,7 +46,6 @@ export const MyProfile: React.FC = () => {
     };
 
     const handleEditProfile = async (values: any) => {
-        // Update user profile via API
         try {
             await updateMyProfile(values);
             setIsModalVisible(false);
@@ -81,7 +87,7 @@ export const MyProfile: React.FC = () => {
                 <h2 style={{color: 'white'}}>Recent History</h2>
                 {user?.history.length > 0 ? (<List
                         dataSource={user?.history}
-                        renderItem={(item) => (
+                        renderItem={(item:Item) => (
                             <List.Item
                                 style={{
                                     border: '1px solid #d9d9d9',

@@ -2,9 +2,10 @@ import { Sidebar } from "./Sidebar";
 import { Content } from "antd/es/layout/layout";
 import { Layout } from "antd";
 import { withAuth } from "../hoc/withAuth";
+import React from "react";
 
 interface IAppLayoutProps {
-    children: any;
+    children: React.ReactNode;
 }
 
 const AppLayout = ({ children }: IAppLayoutProps) => {

@@ -1,6 +1,6 @@
 // src/pages/Login.tsx
 import React, { useState } from 'react';
-import { Button, Input, Tabs, Typography, Layout, Select } from 'antd';
+import {Button, Input, Tabs, Typography, Layout, Select, notification} from 'antd';
 import { useMutation } from 'react-query';
 import Cookies from 'js-cookie';
 import {useNavigate} from "react-router-dom";
@@ -53,8 +53,10 @@ const Login: React.FC = () => {
             navigate("/app")
         },
         onError: (error) => {
-            console.error('Login error:', error);
-            // Handle error (e.g., show notification)
+            notification.error({
+                message: "Error",
+                description: error.message,
+            });
         }
     });
 

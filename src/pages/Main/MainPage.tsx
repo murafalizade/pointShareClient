@@ -18,6 +18,12 @@ const socket = io(baseUrl, {
     },
 });
 
+interface Item {
+    username: string;
+    point: number;
+    date: string;
+}
+
 const MainPage: React.FC = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -57,7 +63,7 @@ const MainPage: React.FC = () => {
     });
 
     const myName = userInfo?.username || 'Loading...';
-    const myPoints = userInfo?.point || 0;
+    const myPoints = userInfo?.point.toFixed(3) || 0;
 
     const showGivePointModal = (userId: string) => {
         setSelectedUserId(userId);
@@ -104,7 +110,7 @@ const MainPage: React.FC = () => {
                                             title={<Text style={{ color: '#fff' }}>{user.username}</Text>}
                                             description={
                                                 <Text style={{ color: '#d9d9d9' }}>
-                                                    {user.point} <StarOutlined />
+                                                    {user?.point.toFixed(3)} <StarOutlined />
                                                 </Text>
                                             }
                                         />
@@ -126,14 +132,14 @@ const MainPage: React.FC = () => {
                             <>
                                 <List
                                     dataSource={ pointHistory?.slice(0, 5)}
-                                    renderItem={(item) => (
+                                    renderItem={(item:Item) => (
                                         <List.Item
                                             style={{
                                                 border: '1px solid #d9d9d9',
                                                 borderRadius: '8px',
                                                 marginBottom: '12px',
                                                 padding: '12px',
-                                                backgroundColor: item.username === myName ? '#1890ff' : '#4CAF50', // Sender (user) in blue, receiver in green
+                                                backgroundColor: item.username === myName ? '#1890ff' : '#4CAF50',
                                                 color: '#fff',
                                             }}
                                         >
