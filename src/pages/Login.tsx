@@ -52,10 +52,10 @@ const Login: React.FC = () => {
             console.log('Login successful', data);
             navigate("/app")
         },
-        onError: (error) => {
+        onError: () => {
             notification.error({
                 message: "Error",
-                description: error.message,
+                description: "",
             });
         }
     });
